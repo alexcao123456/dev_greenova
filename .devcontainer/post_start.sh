@@ -20,7 +20,9 @@ clone(){
     git init
     git remote add origin "$REPO_URL"
     git clean -fd
-    git pull origin main
+    git fetch origin
+    git checkout -b main origin/debug
+    #git pull origin main
   else
     echo "[build.sh] .git folder found. Skipping clone."
   fi
@@ -354,6 +356,152 @@ setup_fish_direnv() {
   fi
 }
 
+# debug in setup fish
+setup_fish_direnv_debug() {
+  FISH_CONFIG="${HOME}/.config/fish/config.fish"
+
+  # Ensure fish config directory exists
+  echo "Creating Fish config directory..."
+  mkdir -p "$(dirname "$FISH_CONFIG")" || {
+    echo "Failed to create Fish config directory" >&2
+    return 1
+  }
+
+  # Check if direnv hook already exists in config
+  echo "Checking if direnv hook exists in Fish config..."
+  if ! grep -q "direnv hook fish" "$FISH_CONFIG" 2>/dev/null; then
+    echo "Configuring direnv hook for Fish shell..."
+    {
+      echo ""
+      echo "# Set up direnv"
+      echo "if type -q direnv"
+      echo "    direnv hook fish | source"
+      echo "end"
+
+      echo "# Python virtual environment indicator for Fish"
+      echo "function show_virtual_env --description 'Show virtual env name'"
+      echo "    if set -q VIRTUAL_ENV"
+      echo "        echo -n '('(basename \$VIRTUAL_ENV)') '"
+      echo "    end"
+      echo "end"
+
+      echo "# Setup Fish prompt to show virtual env"
+      echo "if not set -q __fish_prompt_orig"
+      echo "    functions -c fish_prompt __fish_prompt_orig"
+      echo "    functions -e fish_prompt"
+      echo "end"
+
+      echo "function fish_prompt"
+      echo "    show_virtual_env"
+      echo "    __fish_prompt_orig"
+      echo "end"
+
+      echo "# Activate Python virtual environment on startup"
+      echo "if test -d /workspaces/greenova/.venv"
+      echo "    if not set -q VIRTUAL_ENV"
+      echo "        cd /workspaces/greenova"
+      echo "    end"
+      echo "end"
+
+      echo "# NVM and Node.js setup for fish"
+      echo "set -gx NVM_DIR /usr/local/share/nvm"
+      echo "if test -d \$NVM_DIR"
+      echo "    # Add Node.js binary path to fish PATH"
+      echo "    set -gx PATH \$HOME/.nvm/versions/node/v18.20.7/bin \$PATH"
+      echo "    # For accessing node and npm globally from default NVM version"
+      echo "    set -gx PATH /usr/local/share/nvm/versions/node/v18.20.7/bin \$PATH"
+      echo "end"
+
+      echo "# Function to use NVM in fish"
+      echo "function nvm"
+      echo "    bass source /usr/local/share/nvm/nvm.sh --no-use ';' nvm \$argv"
+      echo "end"
+
+      echo "# Ensure npm is accessible as a command"
+      echo "if not type -q npm"
+      echo "    alias npm='/usr/local/share/nvm/versions/node/v18.20.7/bin/npm'"
+      echo "end"
+
+      echo "# Ensure node is accessible as a command"
+      echo "if not type -q node"
+      echo "    alias node='/usr/local/share/nvm/versions/node/v18.20.7/bin/node'"
+      echo "end"
+    } >>"$FISH_CONFIG" || {
+      echo "Failed to write to Fish config file: $FISH_CONFIG" >&2
+      return 1
+    }
+    echo "Fish shell configured with direnv hook, virtual env support, and Node.js/npm"
+
+    # If bass (Bash script adapter for fish) is not installed, install it
+    echo "Installing bass if not present..."
+    fish -c 'if not type -q bass; and type -q fisher; fisher install edc/bass; end' || {
+      echo "Warning: Failed to install bass, continuing..." >&2
+    }
+  else
+    echo "Fish shell already configured with direnv hook"
+    # Still ensure NVM paths are added if not already present
+    if ! grep -q "NVM_DIR" "$FISH_CONFIG" 2>/dev/null; then
+      echo "Adding NVM configuration to fish shell..."
+      {
+        echo ""
+        echo "# NVM and Node.js setup for fish"
+        echo "set -gx NVM_DIR /usr/local/share/nvm"
+        echo "if test -d \$NVM_DIR"
+        echo "    # Add Node.js binary path to fish PATH"
+        echo "    set -gx PATH \$HOME/.nvm/versions/node/v18.20.7/bin \$PATH"
+        echo "    # For accessing node and npm globally from default NVM version"
+        echo "    set -gx PATH /usr/local/share/nvm/versions/node/v18.20.7/bin \$PATH"
+        echo "end"
+
+        echo "# Function to use NVM in fish"
+        echo "function nvm"
+        echo "    bass source /usr/local/share/nvm/nvm.sh --no-use ';' nvm \$argv"
+        echo "end"
+
+        echo "# Ensure npm is accessible as a command"
+        echo "if not type -q npm"
+        echo "    alias npm='/usr/local/share/nvm/versions/node/v18.20.7/bin/npm'"
+        echo "end"
+
+        echo "# Ensure node is accessible as a command"
+        echo "if not type -q node"
+        echo "    alias node='/usr/local/share/nvm/versions/node/v18.20.7/bin/node'"
+        echo "end"
+      } >>"$FISH_CONFIG" || {
+        echo "Failed to write NVM configuration to Fish config file: $FISH_CONFIG" >&2
+        return 1
+      }
+      echo "Added Node.js and npm configuration to fish shell"
+    fi
+  fi
+
+  # Ensure .envrc has proper permissions
+  if [ -f "/workspaces/greenova/.envrc" ]; then
+    echo "Setting execute permissions on .envrc..."
+    chmod +x "/workspaces/greenova/.envrc" || {
+      echo "Failed to set permissions on .envrc" >&2
+      return 1
+    }
+    echo "Set execute permissions on .envrc file"
+
+    # Force direnv to reload with the new .envrc
+    echo "Running cd /workspaces/greenova..."
+    cd /workspaces/greenova || {
+      echo "Failed to cd to /workspaces/greenova" >&2
+      return 1
+    }
+
+    echo "Running direnv allow..."
+    direnv allow || {
+      echo "Failed to run direnv allow, output:" >&2
+      direnv allow 2>&1 | tee /dev/stderr
+      echo "Continuing despite direnv allow failure..." >&2
+    }
+  fi
+
+  return 0
+}
+
 main() {
   clone
 
@@ -402,7 +550,7 @@ main() {
 
   # Configure Fish shell with direnv (after venv is set up)
   echo "Setting up Fish shell with direnv..."
-  setup_fish_direnv
+  setup_fish_direnv_debug
 
   echo "Removing DEFAULT_KWARGS block in hyperscript.py by keyword..."
   sed -i '/^DEFAULT_KWARGS *= *{/,/^ *raise TypeError/d' /workspaces/greenova/.venv/lib/python3.9/site-packages/django_hyperscript/templatetags/hyperscript.py
