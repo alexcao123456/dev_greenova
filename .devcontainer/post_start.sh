@@ -20,8 +20,15 @@ clone(){
     git init
     git remote add origin "$REPO_URL"
     git clean -fd
-    git fetch origin
-    git checkout -b main origin/debug
+    git fetch origin --verbose
+    # Check available branches
+    echo "Available remote branches:"
+    git branch -r
+    # Attempt to checkout debug branch
+    git checkout -b main origin/debug || {
+      echo "Failed to checkout origin/debug. Available branches are listed above." >&2
+      return 1
+    }
     #git pull origin main
   else
     echo "[build.sh] .git folder found. Skipping clone."
