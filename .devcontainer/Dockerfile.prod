@@ -1,0 +1,49 @@
+# Stage 1: Install Node dependencies and build frontend (if needed later)
+FROM node:18.20.7-alpine AS node-deps
+
+WORKDIR /app/frontend
+
+COPY package*.json ./
+RUN npm ci
+
+# Stage 2: Install Python dependencies
+FROM python:3.9.21-alpine AS python-deps
+
+WORKDIR /app
+
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    python3-dev \
+    linux-headers
+
+COPY requirements.txt constraints.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -c constraints.txt
+# RUN ls -la /usr/lib/python3.9 /usr/local/lib/python3.9
+# RUN ls -la /usr/local/lib/python3.9/site-packages
+
+# Stage 3: Final image
+FROM python:3.9.21-alpine
+
+# Prevent Python from buffering stdout/stderr
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Copy dependencies from previous stages
+# COPY --from=python-deps /usr/lib/python3.9/site-packages /usr/lib/python3.9/site-packages
+COPY --from=python-deps /usr/local /usr/local
+#COPY --from=python-deps /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+
+# Copy application source code
+COPY . .
+
+# Create non-root user
+RUN addgroup -g 1000 app && \
+    adduser -D -u 1000 -G app app && \
+    chown -R app:app /app
+
+USER app
+
+# Use gunicorn to run Django
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "greenova.wsgi:application"]
