@@ -2,10 +2,10 @@
   "name": "Greenova Development",
   // "dockerComposeFile": "docker-compose.yml",
   //"service": "greenova",
-  "image": "ghcr.io/alexcao123456/greenova-dev:latest",
-  //"build": {
-  //  "dockerfile": "Dockerfile"
-  //},
+  //"image": "ghcr.io/alexcao123456/greenova-dev:latest",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   
   "features": {
   /*
