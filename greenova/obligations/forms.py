@@ -336,15 +336,15 @@ class ObligationForm(forms.ModelForm):
         ),
     )
 
-    responsibilities = forms.ModelMultipleChoiceField(
-        queryset=Responsibility.objects.all(),
-        widget=Select2MultipleWidget(
-            attrs={'class': 'form-input', 'aria-describedby': 'responsibilities-help'}
-        ),
-        required=True,  # Make this required to ensure at least one responsibility is assigned
-        label='Assign Responsibilities',
-        help_text='Select one or more responsibilities for this obligation',
-    )
+   # responsibilities = forms.ModelMultipleChoiceField(
+   #     queryset=Responsibility.objects.all(),
+   #     widget=Select2MultipleWidget(
+    #        attrs={'class': 'form-input', 'aria-describedby': 'responsibilities-help'}
+    #    ),
+    #    required=True,  # Make this required to ensure at least one responsibility is assigned
+    #    label='Assign Responsibilities',
+   #     help_text='Select one or more responsibilities for this obligation',
+    #)
 
     def __init__(self, *args, **kwargs):
         self.project = kwargs.pop('project', None)
@@ -359,11 +359,11 @@ class ObligationForm(forms.ModelForm):
         self.fields['responsibility'].choices = get_responsibility_choices()
 
         # Use responsibilities from the responsibility app
-        if responsibilities is not None:
-            self.fields['responsibilities'].queryset = responsibilities
-        else:
+        #if responsibilities is not None:
+        #    self.fields['responsibilities'].queryset = responsibilities
+        #else:
             # Default behavior: get all responsibility roles
-            self.fields['responsibilities'].queryset = Responsibility.objects.all()
+        #    self.fields['responsibilities'].queryset = Responsibility.objects.all()
 
         # Handle initial project
         if self.project:
@@ -400,7 +400,7 @@ class ObligationForm(forms.ModelForm):
                     instance.custom_environmental_aspect
                 )
 
-            self.fields['responsibilities'].initial = instance.responsibilities.all()
+           # self.fields['responsibilities'].initial = instance.responsibilities.all()
         else:
             self.fields['obligation_number'].help_text = (
                 'Unique identifier (PCEMP-XXX format). Leave blank to auto-generate.'
@@ -485,12 +485,12 @@ class ObligationForm(forms.ModelForm):
 
         return custom_aspect
 
-    def clean_responsibilities(self):
-        """Validate at least one responsibility is selected."""
-        responsibilities = self.cleaned_data.get('responsibilities')
-        if not responsibilities or len(responsibilities) == 0:
-            raise forms.ValidationError('Please select at least one responsibility.')
-        return responsibilities
+    #def clean_responsibilities(self):
+    #    """Validate at least one responsibility is selected."""
+    #    responsibilities = self.cleaned_data.get('responsibilities')
+    #    if not responsibilities or len(responsibilities) == 0:
+    #        raise forms.ValidationError('Please select at least one responsibility.')
+     #   return responsibilities
 
     def clean(self):
         """Cross-field validation to enforce business rules."""
