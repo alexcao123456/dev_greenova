@@ -15,6 +15,18 @@
                     {% if value == form.instance.responsibility %}selected{% endif %}>{{ display_name }}</option>
           {% endfor %}
         </select>
+        <!--for test--> 
+        <label for="responsibilities">Responsibilities (test):</label>
+        {{ form.responsibilities }}       
+        {% if form.responsibilities.errors %}
+        <ul class="errorlist">
+          {% for error in form.responsibilities.errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      <!--for test--> 
+
       </div>
       <!-- ...existing code... -->
     </fieldset>
