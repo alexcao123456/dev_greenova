@@ -153,6 +153,7 @@ INSTALLED_APPS = [
 
     # Your local apps (ordered by dependency)
     'authentication',
+    'inspection',
     'core.apps.CoreConfig',  # Core logic, should be initialized early
     'company',  # Base models (used in other apps, so placed first)
     'projects',  # Likely depends on `company`
