@@ -25,7 +25,7 @@ clone(){
     echo "Available remote branches:"
     git branch -r
     # Attempt to checkout debug branch
-    git checkout -b issue53 origin/myDevcontainer || {
+    git checkout -b issue53 origin/issue53 || {
       echo "Failed to checkout origin/debug. Available branches are listed above." >&2
       return 1
     }
